@@ -43,7 +43,6 @@ class FileStorage(pathToDiskStorage: Path):
           .foldLeft(None: Option[String]):
             case (_, line) if line.startsWith(k) => Some(line.value)
             case (none, _)                       => none
-      .map(_.value)
 
   def mergeAndCompact(): Unit =
     val files = Files
@@ -62,6 +61,9 @@ class FileStorage(pathToDiskStorage: Path):
 
       files.foreach: file =>
         Files.delete(file)
+
+  def clear(): Unit =
+    Files.list(pathToDiskStorage).forEach(Files.deleteIfExists)
 
 object FileStorage:
   import Line.*

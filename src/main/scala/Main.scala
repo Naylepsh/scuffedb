@@ -12,14 +12,20 @@ object Main extends IOApp.Simple:
     FileStorage(Paths.get("./data")) match
       case Left(error) => IO.println(error)
       case Right(fileStorage) =>
-        val engine  = StorageEngine(maxSize = 6, fileStorage = fileStorage)
-        val httpApp = routes(engine).orNotFound
+        MultithreadedStorageEngine(
+          SimpleStorageEngine(
+            maxSize = 6,
+            fileStorage = fileStorage,
+            appendLog = AppendLog(Paths.get("./appendlog.log"))
+          )
+        ).flatMap: engine =>
+          val httpApp = routes(engine).orNotFound
 
-        EmberServerBuilder
-          .default[IO]
-          .withHost(ipv4"0.0.0.0")
-          .withPort(port"8080")
-          .withHttpApp(httpApp)
-          .build
-          .use(_ => IO.never)
-          .as(ExitCode.Success)
+          EmberServerBuilder
+            .default[IO]
+            .withHost(ipv4"0.0.0.0")
+            .withPort(port"8080")
+            .withHttpApp(httpApp)
+            .build
+            .use(_ => IO.never)
+            .as(ExitCode.Success)

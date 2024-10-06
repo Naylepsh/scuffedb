@@ -4,9 +4,11 @@ import org.http4s.dsl.io.*
 
 def routes(engine: StorageEngine): HttpRoutes[IO] = HttpRoutes.of[IO]:
   case GET -> Root / key =>
-    engine.find(key) match
-      case None        => NotFound()
-      case Some(value) => Ok(value)
+    engine
+      .find(key)
+      .flatMap:
+        case None        => NotFound()
+        case Some(value) => Ok(value)
 
   case req @ POST -> Root / key =>
     req

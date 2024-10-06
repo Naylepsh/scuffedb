@@ -39,5 +39,4 @@ class FileStorageSuite extends munit.FunSuite:
     )
 
     val actual = FileStorage.merge(files)
-    println(actual)
     assertEquals(actual, expected)
