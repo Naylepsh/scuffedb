@@ -13,7 +13,9 @@ class AppendLog(pathToLog: Path):
     )
 
   def read(): List[(String, String)] =
-    Files.readAllLines(pathToLog).iterator().asScala.toList.map(Line.entry)
+    if Files.exists(pathToLog) then
+      Files.readAllLines(pathToLog).iterator().asScala.toList.map(Line.entry)
+    else List.empty
 
   def clear(): Unit =
     Files.deleteIfExists(pathToLog)

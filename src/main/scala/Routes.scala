@@ -14,5 +14,4 @@ def routes(engine: StorageEngine): HttpRoutes[IO] = HttpRoutes.of[IO]:
     req
       .as[String]
       .flatMap: value =>
-        engine.add(key, value)
-        Ok("")
+        engine.add(key, value) *> Ok("")
