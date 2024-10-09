@@ -70,7 +70,7 @@ class FileStorage(pathToDiskStorage: Path)(using codec: Codec[Entry]):
       case entry :: _ if entry.key == key => Some(entry)
       case _ :: tail                      => findInContent(key, tail)
 
-  def mergeAndCompact(): Unit =
+  def mergeAndCompact(): List[String] =
     val files = Files
       .list(pathToDiskStorage)
       .iterator
@@ -83,8 +83,15 @@ class FileStorage(pathToDiskStorage: Path)(using codec: Codec[Entry]):
         .map(Files.readAllLines(_).asScala.toList)
         .toList
         .traverse(_.traverse(codec.decode))
-        .map(FileStorage.merge.andThen(add))
-        .fold(throw _, _ => files.foreach(Files.delete))
+        .map(FileStorage.merge)
+        .tap(_.map(add))
+        .fold(
+          throw _,
+          entries =>
+            files.foreach(Files.delete)
+            entries.map(_.key)
+        )
+    else List.empty
 
   def clear(): Unit =
     Files.list(pathToDiskStorage).forEach(Files.deleteIfExists)

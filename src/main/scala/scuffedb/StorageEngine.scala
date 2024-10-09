@@ -2,6 +2,7 @@ package scuffedb
 
 import scala.collection.mutable.TreeMap
 
+import bloomfilter.mutable.BloomFilter
 import cats.effect.IO
 import cats.effect.std.Mutex
 import cats.syntax.all.*
@@ -22,9 +23,12 @@ class SimpleStorageEngine(
     appendLog: AppendLog
 ) extends StorageEngine:
   val memTable = TreeMap.empty[String, Entry]
+  val bloomFilter = bloomfilter.mutable
+    .BloomFilter[String](numberOfItems = 1_000_000, falsePositiveRate = 0.1)
 
   def add(key: String, value: String): IO[Unit] = IO.delay:
     add(Entry.makeActive(key, value))
+    bloomFilter.add(key)
 
   def find(key: String): IO[Option[String]] = IO.delay:
     memTable
@@ -46,7 +50,9 @@ class SimpleStorageEngine(
     appendLog.clear()
 
   def mergeAndCompact(): IO[Unit] = IO.delay:
-    fileStorage.mergeAndCompact()
+    val keys = fileStorage.mergeAndCompact()
+    bloomFilter.dispose()
+    keys.foreach(bloomFilter.add)
 
   def restore(): IO[Unit] =
     IO.raiseUnless(memTable.isEmpty)(
