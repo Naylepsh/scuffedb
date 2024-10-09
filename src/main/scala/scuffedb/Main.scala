@@ -16,7 +16,10 @@ object Main extends IOApp.Simple:
       .flatMap: fileStorage =>
         MultithreadedStorageEngine(
           SimpleStorageEngine(
-            maxSize = 6,
+            /* Supposedly a couple of KBs is just right for the in-memory size to be.
+             * Surely this number times avg. string size will yield just that, right?
+             */
+            maxItemCount = 69_420,
             fileStorage = fileStorage,
             appendLog = AppendLog(Paths.get("./appendlog.log"))
           )

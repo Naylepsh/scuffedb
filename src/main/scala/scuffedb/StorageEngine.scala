@@ -18,7 +18,11 @@ trait StorageEngine:
   def restore(): IO[Unit]
 
 class SimpleStorageEngine(
-    maxSize: Long,
+    /* This is a very naive metric.
+     * It would be better to have a maxSize not for items, but for their total size.
+     * Currently nothing stops the user from inserting a couple of large items that together don't fit in memory.
+     */
+    maxItemCount: Long,
     fileStorage: FileStorage,
     appendLog: AppendLog
 ) extends StorageEngine:
@@ -42,7 +46,7 @@ class SimpleStorageEngine(
   private def add(entry: Entry): Unit =
     appendLog.add(entry)
     memTable += (entry.key -> entry)
-    if memTable.size >= maxSize then flush()
+    if memTable.size >= maxItemCount then flush()
 
   def flush(): IO[Unit] = IO.delay:
     fileStorage.add(memTable.values.toList)

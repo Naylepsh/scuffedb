@@ -43,7 +43,7 @@ object StorageEngineSuite:
         IO.delay:
           val log = AppendLog(Paths.get("./src/test/resources/appendlog.log"))
           val engine = SimpleStorageEngine(
-            maxSize = 6,
+            maxItemCount = 6,
             fileStorage = fileStorage,
             appendLog = log
           )
