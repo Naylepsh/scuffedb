@@ -1,5 +1,9 @@
+package scuffedb
+
+import domain.*
+
 class FileStorageSuite extends munit.FunSuite:
-  test("merge"):
+  test("merge all active"):
     val files: List[List[Entry]] = List(
       List(
         Entry.makeActive("handbag", "8786"),
@@ -40,3 +44,31 @@ class FileStorageSuite extends munit.FunSuite:
 
     val actual = FileStorage.merge(files)
     assertEquals(actual, expected)
+
+  test("merge some tombstones"):
+    val files: List[List[Entry]] = List(
+      List(
+        Entry.makeActive("handbag", "8784"),
+        Entry.makeActive("handful", "40308"),
+        Entry.makeTombstone("handicap"),
+        Entry.makeActive("handprinted", "11150")
+      ),
+      List(
+        Entry.makeTombstone("handbag"),
+        Entry.makeActive("handful", "42307"),
+        Entry.makeActive("handicap", "67884"),
+        Entry.makeTombstone("handprinted")
+      ),
+      List(
+        Entry.makeActive("handful", "44662"),
+        Entry.makeActive("handicap", "70836"),
+        Entry.makeActive("handprinted", "33632")
+      )
+    ).reverse
+    val expected = List(
+      Entry.makeActive("handful", "44662"),
+      Entry.makeActive("handicap", "70836"),
+      Entry.makeActive("handprinted", "33632")
+    )
+
+    val actual = FileStorage.merge(files)

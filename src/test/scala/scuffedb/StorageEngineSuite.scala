@@ -1,5 +1,11 @@
+package scuffedb
+
 import java.nio.file.Paths
+
 import cats.effect.IO
+
+import codecs.given
+import domain.*
 
 class StorageEngineSuite extends munit.CatsEffectSuite:
   test("integration"):
@@ -17,6 +23,8 @@ class StorageEngineSuite extends munit.CatsEffectSuite:
         x3 <- engine.find("x")
         y2 <- engine.find("y")
         z2 <- engine.find("z")
+        _  <- engine.delete("x")
+        x4 <- engine.find("x")
       yield
         assertEquals(x1, None)
         assertEquals(x2, Some("hello"))
@@ -25,6 +33,7 @@ class StorageEngineSuite extends munit.CatsEffectSuite:
         assertEquals(x3, Some("hello"))
         assertEquals(y2, Some("world"))
         assertEquals(z2, Some("goodbye"))
+        assertEquals(x4, None)
 
 object StorageEngineSuite:
   val resources =

@@ -1,9 +1,14 @@
+package scuffedb
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.*
 
 import scala.jdk.CollectionConverters.*
 
 import cats.syntax.all.*
+
+import codecs.*
+import domain.*
 
 class AppendLog(pathToLog: Path)(using codec: Codec[Entry]):
   def add(entry: Entry): Unit =
