@@ -18,7 +18,7 @@ class SimpleStorageEngine(
   val memTable = TreeMap.empty[String, String]
 
   def add(key: String, value: String): IO[Unit] = IO.delay:
-    appendLog.add(key, value)
+    appendLog.add(Entry.makeActive(key, value))
     memTable += (key -> value)
     if memTable.size >= maxSize then flush()
 
@@ -37,7 +37,7 @@ class SimpleStorageEngine(
     IO.raiseUnless(memTable.isEmpty)(
       new RuntimeException("Cannot restore state when it's already initialized")
     ).flatTap: _ =>
-      appendLog.read().traverse(add)
+      appendLog.read().traverse(entry => add(entry.key, entry.value))
 
 class MultithreadedStorageEngine(engine: SimpleStorageEngine, mutex: Mutex[IO])
     extends StorageEngine:

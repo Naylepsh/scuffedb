@@ -5,22 +5,22 @@ import java.time.Instant
 import scala.collection.mutable.TreeMap
 import scala.jdk.CollectionConverters.*
 import scala.util.control.NoStackTrace
-import scala.util.chaining.*
+
+import cats.syntax.all.*
 
 case object NotADirectory extends NoStackTrace
 type NotADirectory = NotADirectory.type
 
-class FileStorage(pathToDiskStorage: Path):
-  import Line.*
-
+class FileStorage(pathToDiskStorage: Path)(using codec: Codec[Entry]):
   def add(memTable: TreeMap[String, String]): Unit =
-    val fileId  = Instant.now().toString
-    val content = memTable.map(Line.make).mkString("\n")
+    val fileId = Instant.now().toString
+    val content =
+      memTable.map(Entry.makeActive.tupled.andThen(codec.encode)).mkString("\n")
     add(fileId, content)
 
-  def add(lines: List[Line]): Unit =
+  def add(entries: List[Entry]): Unit =
     val fileId  = Instant.now().toString
-    val content = lines.mkString("\n")
+    val content = entries.map(codec.encode).mkString("\n")
     add(fileId, content)
 
   private def add(fileId: String, content: String): Unit =
@@ -40,9 +40,12 @@ class FileStorage(pathToDiskStorage: Path):
           .lines(path)
           .iterator
           .asScala
+          .toList
+          .traverse(codec.decode)
+          .fold(throw _, identity)
           .foldLeft(None: Option[String]):
-            case (_, line) if line.startsWith(k) => Some(line.value)
-            case (none, _)                       => none
+            case (_, entry) if entry.key.eqv(key) => Some(entry.value)
+            case (none, _)                        => none
 
   def mergeAndCompact(): Unit =
     val files = Files
@@ -53,21 +56,16 @@ class FileStorage(pathToDiskStorage: Path):
 
     if files.length > 1 then
       files
-        .map: file =>
-          Files.readAllLines(file).asScala.toList
+        .map(Files.readAllLines(_).asScala.toList)
         .toList
-        .pipe(FileStorage.merge)
-        .pipe(add)
-
-      files.foreach: file =>
-        Files.delete(file)
+        .traverse(_.traverse(codec.decode))
+        .map(FileStorage.merge.andThen(add))
+        .fold(throw _, _ => files.foreach(Files.delete))
 
   def clear(): Unit =
     Files.list(pathToDiskStorage).forEach(Files.deleteIfExists)
 
 object FileStorage:
-  import Line.*
-
   def apply(pathToDiskStorage: Path): Either[NotADirectory, FileStorage] =
     Either.cond(
       Files.isDirectory(pathToDiskStorage),
@@ -75,28 +73,24 @@ object FileStorage:
       NotADirectory
     )
 
-  def merge(contents: List[List[Line]]): List[Line] =
-    // Assumes that files are ordered from oldest to latest
-    contents
-      .map: fileLines =>
-        fileLines.map(_.entry)
-      .pipe(merge(_, List.empty))
-      .map(make)
+  def merge(contents: List[List[Entry]]): List[Entry] =
+    merge(contents, List.empty)
 
   @scala.annotation.tailrec
-  def merge(
-      content: List[List[(String, String)]],
-      acc: List[(String, String)]
-  ): List[(String, String)] =
+  private def merge(content: List[List[Entry]], acc: List[Entry]): List[Entry] =
+    // Assumes that files are ordered from oldest to latest
     content match
       case Nil => acc.reverse
       case _ =>
         content.filter(_.nonEmpty) match
           case Nil => merge(Nil, acc)
           case nonEmpties =>
-            val smallest = nonEmpties.map(_.head).minBy(_._1)
+            val smallest = nonEmpties.map(_.head).minBy(_.key)
 
-            val xs = nonEmpties.map:
-              case head :: tail if head._1 == smallest._1 => tail
-              case other                                  => other
-            merge(xs, smallest :: acc)
+            val leftoverContent = nonEmpties.map:
+              case head :: tail if head.key == smallest.key => tail
+              case other                                    => other
+            val newAcc = smallest.status match
+              case Status.Active   => smallest :: acc
+              case Status.Inactive => acc
+            merge(leftoverContent, newAcc)

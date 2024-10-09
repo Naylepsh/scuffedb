@@ -1,41 +1,41 @@
 class FileStorageSuite extends munit.FunSuite:
   test("merge"):
-    val files: List[List[Line]] = List(
+    val files: List[List[Entry]] = List(
       List(
-        Line.make("handbag", "8786"),
-        Line.make("handful", "40308"),
-        Line.make("handicap", "65955"),
-        Line.make("handkerchief", "16324"),
-        Line.make("handlebars", "3869"),
-        Line.make("handprinted", "11150")
+        Entry.makeActive("handbag", "8786"),
+        Entry.makeActive("handful", "40308"),
+        Entry.makeActive("handicap", "65955"),
+        Entry.makeActive("handkerchief", "16324"),
+        Entry.makeActive("handlebars", "3869"),
+        Entry.makeActive("handprinted", "11150")
       ),
       List(
-        Line.make("handcuffs", "2729"),
-        Line.make("handful", "42307"),
-        Line.make("handicap", "67884"),
-        Line.make("handiwork", "16912"),
-        Line.make("handkerchief", "20952"),
-        Line.make("handprinted", "15725")
+        Entry.makeActive("handcuffs", "2729"),
+        Entry.makeActive("handful", "42307"),
+        Entry.makeActive("handicap", "67884"),
+        Entry.makeActive("handiwork", "16912"),
+        Entry.makeActive("handkerchief", "20952"),
+        Entry.makeActive("handprinted", "15725")
       ),
       List(
-        Line.make("handful", "44662"),
-        Line.make("handicap", "70836"),
-        Line.make("handiwork", "45521"),
-        Line.make("handlebars", "3869"),
-        Line.make("handoff", "5754"),
-        Line.make("handprinted", "33632")
+        Entry.makeActive("handful", "44662"),
+        Entry.makeActive("handicap", "70836"),
+        Entry.makeActive("handiwork", "45521"),
+        Entry.makeActive("handlebars", "3869"),
+        Entry.makeActive("handoff", "5754"),
+        Entry.makeActive("handprinted", "33632")
       )
     ).reverse
     val expected = List(
-      Line.make("handbag", "8786"),
-      Line.make("handcuffs", "2729"),
-      Line.make("handful", "44662"),
-      Line.make("handicap", "70836"),
-      Line.make("handiwork", "45521"),
-      Line.make("handkerchief", "20952"),
-      Line.make("handlebars", "3869"),
-      Line.make("handoff", "5754"),
-      Line.make("handprinted", "33632")
+      Entry.makeActive("handbag", "8786"),
+      Entry.makeActive("handcuffs", "2729"),
+      Entry.makeActive("handful", "44662"),
+      Entry.makeActive("handicap", "70836"),
+      Entry.makeActive("handiwork", "45521"),
+      Entry.makeActive("handkerchief", "20952"),
+      Entry.makeActive("handlebars", "3869"),
+      Entry.makeActive("handoff", "5754"),
+      Entry.makeActive("handprinted", "33632")
     )
 
     val actual = FileStorage.merge(files)

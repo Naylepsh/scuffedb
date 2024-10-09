@@ -3,18 +3,27 @@ import java.nio.file.*
 
 import scala.jdk.CollectionConverters.*
 
-class AppendLog(pathToLog: Path):
-  def add(key: String, value: String): Unit =
+import cats.syntax.all.*
+
+class AppendLog(pathToLog: Path)(using codec: Codec[Entry]):
+  def add(entry: Entry): Unit =
     Files.write(
       pathToLog,
-      s"${Line.make(key, value)}\n".getBytes(StandardCharsets.UTF_8),
+      s"${codec.encode(entry)}\n"
+        .getBytes(StandardCharsets.UTF_8),
       StandardOpenOption.CREATE,
       StandardOpenOption.APPEND
     )
 
-  def read(): List[(String, String)] =
+  def read(): List[Entry] =
     if Files.exists(pathToLog) then
-      Files.readAllLines(pathToLog).iterator().asScala.toList.map(Line.entry)
+      Files
+        .readAllLines(pathToLog)
+        .iterator()
+        .asScala
+        .toList
+        .traverse(codec.decode)
+        .fold(throw _, identity)
     else List.empty
 
   def clear(): Unit =

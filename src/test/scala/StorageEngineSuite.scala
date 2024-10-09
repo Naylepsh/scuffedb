@@ -6,8 +6,8 @@ class StorageEngineSuite extends munit.CatsEffectSuite:
     StorageEngineSuite.resources.flatMap: (_, log, engine) =>
       for
         x1 <- engine.find("x")
-        _ = log.add("x", "hello")
-        _ = log.add("y", "world")
+        _ = log.add(Entry.makeActive("x", "hello"))
+        _ = log.add(Entry.makeActive("y", "world"))
         _  <- engine.restore()
         x2 <- engine.find("x")
         y1 <- engine.find("y")
