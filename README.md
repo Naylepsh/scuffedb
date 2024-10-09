@@ -1,4 +1,4 @@
-## KeyVal DB
+## Scuffed Database
 
 Quick implementation of Sorted String Table mentioned in chapter 3 of "Designing Data-Intensive Applications"
 
