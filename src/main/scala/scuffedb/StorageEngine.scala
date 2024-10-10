@@ -37,7 +37,9 @@ class SimpleStorageEngine(
   def find(key: String): IO[Option[String]] = IO.delay:
     memTable
       .get(key)
-      .fold(fileStorage.find(key)): entry =>
+      .fold(
+        if bloomFilter.mightContain(key) then fileStorage.find(key) else None
+      ): entry =>
         Option.when(entry.mark != Mark.Tombstone)(entry.value)
 
   def delete(key: String): IO[Unit] = IO.delay:
