@@ -30,9 +30,8 @@ class SimpleStorageEngine(
   val bloomFilter = bloomfilter.mutable
     .BloomFilter[String](numberOfItems = 1_000_000, falsePositiveRate = 0.1)
 
-  def add(key: String, value: String): IO[Unit] = IO.delay:
-    add(Entry.makeActive(key, value))
-    bloomFilter.add(key)
+  def add(key: String, value: String): IO[Unit] =
+    add(Entry.makeActive(key, value)) *> IO.delay(bloomFilter.add(key))
 
   def find(key: String): IO[Option[String]] = IO.delay:
     memTable
@@ -42,13 +41,13 @@ class SimpleStorageEngine(
       ): entry =>
         Option.when(entry.mark != Mark.Tombstone)(entry.value)
 
-  def delete(key: String): IO[Unit] = IO.delay:
+  def delete(key: String): IO[Unit] =
     add(Entry.makeTombstone(key))
 
-  private def add(entry: Entry): Unit =
+  private def add(entry: Entry): IO[Unit] =
     appendLog.add(entry)
     memTable += (entry.key -> entry)
-    if memTable.size >= maxItemCount then flush()
+    if memTable.size >= maxItemCount then flush() else IO.unit
 
   def flush(): IO[Unit] = IO.delay:
     fileStorage.add(memTable.values.toList)
